@@ -71,10 +71,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     }
     const oldBlueprint = interview.blueprint && typeof interview.blueprint === "object" ? interview.blueprint as Record<string, unknown> : {};
     const claimObject = claims as { projectClaims?: string[]; excerpt?: string } | null;
-    const updated = await prisma.interview.update({ where: { id: interviewId }, data: {
-      ...(body.consent ? { consent: body.consent } : {}),
-      ...(claims ? { blueprint: { ...oldBlueprint, resumeClaims: claims, personalizedProjectProbes: claimObject?.projectClaims || oldBlueprint.personalizedProjectProbes, sourceExcerpt: claimObject?.excerpt } } : {}),
-    } });
+    const updateData: Record<string, unknown> = {};
+    if (body.consent) updateData.consent = JSON.parse(JSON.stringify(body.consent));
+    if (claims) updateData.blueprint = JSON.parse(JSON.stringify({
+      ...oldBlueprint,
+      resumeClaims: claims,
+      personalizedProjectProbes: claimObject?.projectClaims || oldBlueprint.personalizedProjectProbes,
+      sourceExcerpt: claimObject?.excerpt,
+    }));
+    const updated = await prisma.interview.update({ where: { id: interviewId }, data: updateData as never });
     return NextResponse.json({ id: updated.id, ready: true });
   } catch { return NextResponse.json({ error: "Could not save consent and resume context" }, { status: 503 }); }
 }

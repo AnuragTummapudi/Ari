@@ -12,7 +12,7 @@ export async function POST(req: Request) {
   let interview;
   try { interview = await prisma.interview.findUnique({ where: { id: body.interviewId }, select: { id: true, roomName: true, status: true, candidateId: true } }); }
   catch { return NextResponse.json({ error: "Interview service is unavailable" }, { status: 503 }); }
-  if (!interview) return NextResponse.json({ error: "Interview invitation not found" }, { status: 404 });
+  if (!interview || !interview.roomName) return NextResponse.json({ error: "Interview invitation or room not found" }, { status: 404 });
   if (!verifyInterviewAccessToken(body.accessToken, body.interviewId)) return NextResponse.json({ error: "Interview access expired" }, { status: 401 });
   if (interview.status === "COMPLETED") return NextResponse.json({ error: "This interview is already complete" }, { status: 410 });
   const { LIVEKIT_API_KEY: apiKey, LIVEKIT_API_SECRET: apiSecret, LIVEKIT_URL: url } = process.env;

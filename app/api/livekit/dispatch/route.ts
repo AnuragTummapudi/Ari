@@ -13,7 +13,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Interview access expired" }, { status: 401 });
   }
   const interview = await prisma.interview.findUnique({ where: { id: body.interviewId }, select: { roomName: true, status: true } });
-  if (!interview || interview.status === "COMPLETED") return NextResponse.json({ error: "Interview is unavailable" }, { status: 404 });
+  if (!interview || !interview.roomName || interview.status === "COMPLETED") return NextResponse.json({ error: "Interview is unavailable" }, { status: 404 });
   const { LIVEKIT_URL, LIVEKIT_API_KEY, LIVEKIT_API_SECRET } = process.env;
   if (!LIVEKIT_URL || !LIVEKIT_API_KEY || !LIVEKIT_API_SECRET) {
     return NextResponse.json({ error: "Live interviewer is not configured" }, { status: 503 });
