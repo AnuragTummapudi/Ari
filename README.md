@@ -1,25 +1,63 @@
-# Ari
-
-**A human-centered AI interview platform for structured, conversational practice and hiring interviews.** Ari combines a live 3D interviewer, real-time voice, structured interview plans, and evidence-linked reports. Recruiters remain responsible for decisions; AI findings are reviewable and grounded in the interview transcript.
-
 <p align="center">
-  <img src="docs/images/interview-room.png" alt="Ari interview room with the animated interviewer, candidate camera, interview outline, and conversation controls" width="100%" />
+  <img src="docs/images/ari-logo.svg" alt="Ari Interview Platform" width="300" />
 </p>
 
-## What Ari does
+<h3 align="center">Structured interviews. Human decisions.</h3>
 
-- **Practice interviews:** Candidates can rehearse for a target role, optionally use a saved resume, and review a personalized report.
-- **Structured hiring interviews:** Teams prepare roles and interview outlines with consistent areas of focus.
-- **Live conversations:** A browser joins a LiveKit room with Ari's Python agent. Sarvam provides speech recognition, conversation responses, and speech synthesis.
-- **Evidence-linked reports:** Reports draw on confirmed transcript turns. Reviewers can inspect evidence and make their own ratings.
-- **Candidate controls and privacy:** Camera use is optional. Ari does not retain raw interview audio; transcript retention and consent are presented in the product.
+<p align="center">
+  An AI-powered interview platform for realistic practice and structured hiring conversations, with evidence-linked reports built for human review.
+</p>
 
-## How a live interview works
+<p align="center">
+  <a href="https://nextjs.org/"><img alt="Next.js" src="https://img.shields.io/badge/Next.js-16-111111?logo=nextdotjs&logoColor=white"></a>
+  <a href="https://react.dev/"><img alt="React" src="https://img.shields.io/badge/React-19-149ECA?logo=react&logoColor=white"></a>
+  <a href="https://www.typescriptlang.org/"><img alt="TypeScript" src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white"></a>
+  <a href="https://livekit.io/"><img alt="LiveKit" src="https://img.shields.io/badge/LiveKit-WebRTC-7357FF"></a>
+  <a href="https://www.sarvam.ai/"><img alt="Sarvam AI" src="https://img.shields.io/badge/Sarvam-AI%20Voice-176B4D"></a>
+  <a href="https://neon.tech/"><img alt="Neon" src="https://img.shields.io/badge/Neon-Postgres-00E599?logo=neon&logoColor=111111"></a>
+</p>
+
+## Product screenshots
+
+<p align="center">
+  <img src="docs/images/interview-room.png" alt="Live interview room with Ari, candidate camera, interview outline, and conversation controls" width="100%" />
+</p>
+
+<p align="center"><em>Live interview room: a structured outline, voice conversation, and candidate controls.</em></p>
+
+<p align="center">
+  <img src="docs/images/interview-report.png" alt="Interview report with an overall signal, rubric findings, evidence links, reviewer notes, practice plan, and integrity timeline" width="100%" />
+</p>
+
+<p align="center"><em>Post-interview report: evidence-linked rubric findings and practice recommendations for reviewer consideration.</em></p>
+
+## About Ari
+
+Ari supports two interview workflows:
+
+- **Practice:** Candidates rehearse for a target role, optionally using a saved resume, then review a personalized report.
+- **Structured hiring:** Teams prepare role-specific interviews and assess candidates against consistent areas of focus.
+
+The browser joins a LiveKit room with Ari's Python voice agent. The agent listens, asks follow-up questions, and speaks responses. Confirmed transcript turns support the post-interview report, where reviewers can inspect evidence and record their own notes or ratings. AI findings inform human review; Ari does not make hiring decisions automatically.
+
+## Technology stack
+
+| Product area | Stack |
+| --- | --- |
+| Web app and API | Next.js 16, React 19, TypeScript |
+| Live interviews | LiveKit WebRTC, LiveKit Agents for Python |
+| 3D interviewer | Three.js, TalkingHead, HeadAudio |
+| Voice AI | Sarvam speech-to-text, language models, and text-to-speech |
+| Database and sign-in | Neon Postgres, Prisma, Neon Auth |
+| Resume files | Neon Object Storage (S3-compatible, optional) |
+| Hosting | Vercel (web app), Railway (agent worker) |
+
+## How an interview works
 
 1. The candidate checks their microphone and optional camera, reviews the consent choices, and starts an interview.
-2. Ari creates an interview record and room, then issues access for the browser and dispatches the LiveKit agent.
-3. The candidate and agent exchange audio through LiveKit. The worker transcribes speech, generates follow-up prompts, speaks responses, and sends confirmed turns back to the app.
-4. The candidate can **Leave** to exit their session or **End interview** to finish it. The app updates the interview lifecycle and makes the resulting report available when processing completes.
+2. Ari creates an interview record and LiveKit room, then issues access for the browser and dispatches the worker.
+3. The candidate and agent exchange audio through LiveKit. The worker transcribes speech, generates follow-up prompts, speaks responses, and sends confirmed turns to the app.
+4. The candidate can **Leave** to exit their session or **End interview** to finish it. Ari prepares a report from the interview transcript when processing completes.
 
 ## Architecture
 
@@ -38,29 +76,6 @@ flowchart LR
 
 The web app and API run on Vercel. The Python agent is a long-running worker on Railway. Neon holds application data, authentication, and optional resume files. LiveKit carries live media; Sarvam provides AI voice services.
 
-## Technology
-
-| Area | Tools |
-| --- | --- |
-| Web app and API | Next.js 16, React 19, TypeScript |
-| Live interviews | LiveKit WebRTC, LiveKit Agents for Python |
-| Avatar | Three.js, TalkingHead, HeadAudio |
-| Voice AI | Sarvam STT, LLM, and TTS |
-| Data and sign-in | Neon Postgres, Prisma, Neon Auth |
-| Resume files | Neon Object Storage (S3-compatible), optional |
-
-## Repository layout
-
-```text
-app/                 Next.js pages and API routes
-components/          Workspace, interview room, and avatar UI
-lib/                 Auth, database, LiveKit, storage, and AI helpers
-agent/               Python LiveKit agent worker
-prisma/              Database schema and versioned SQL migrations
-public/              Avatar and browser assets
-docs/images/         README product screenshots
-```
-
 ## Run locally
 
 ### Requirements
@@ -71,7 +86,7 @@ docs/images/         README product screenshots
 - LiveKit project credentials
 - Sarvam API key
 
-### 1. Configure the web app
+### 1. Install and configure
 
 ```bash
 git clone https://github.com/AnuragTummapudi/Ari.git
@@ -109,44 +124,44 @@ uv run python worker.py dev
 
 Open [http://localhost:3000](http://localhost:3000).
 
-## Deploy
+## Deployment
 
 ### Vercel: web app and API
 
 1. Import the repository into Vercel and use the repository root as the project root.
-2. Add the **Vercel** variables listed in the table below for the Production environment (and Preview if needed).
-3. Use the repository build command, `npm run build`. Prisma Client generation is configured by the project build setup.
-4. Deploy. When changing environment variables, redeploy so the new deployment receives them.
-5. Apply pending production database migrations with `npx prisma migrate deploy` from a trusted environment configured for the production database, or run this as a controlled CI deployment step.
+2. Add the **Vercel** variables listed in the table below for Production (and Preview if needed).
+3. Use `npm run build`; Prisma Client generation is included in the project build command.
+4. Deploy. Redeploy after changing environment variables.
+5. Apply production database migrations with `npx prisma migrate deploy` from a trusted environment configured for the production database, or through a controlled CI deployment step.
 
-`APP_URL` is for the agent's callbacks to the web API; set it on Railway to the public Vercel origin (for example, `https://ari-interview.vercel.app`). It is not required by the Vercel app.
+`APP_URL` is for the worker's callbacks to the web API. Set it on Railway to the public Vercel origin (for example, `https://ari-interview.vercel.app`). It is not required by the Vercel app.
 
 ### Railway: LiveKit agent
 
 1. Create a service from this repository.
-2. Set **Root Directory** to `/agent` in the service's Settings / Build configuration. If Railway's UI does not show that setting, keep the repository root and set the build/start commands to run from `agent`.
-3. Use the worker start command `uv run python worker.py start` (with `uv` installed and dependencies synchronized during build).
-4. Add the **Railway** variables listed below. Set `APP_URL` to the Vercel origin and make `INTERNAL_API_SECRET` identical to the Vercel value.
+2. Set the service root directory to `/agent` in Settings / Build configuration. If that control is unavailable, keep the repository root and use build/start commands that run from `agent`.
+3. Configure the worker start command as `uv run python worker.py start`, with `uv` installed and dependencies synchronized during build.
+4. Add the **Railway** variables listed below. Set `APP_URL` to the Vercel origin and make `INTERNAL_API_SECRET` match the Vercel value.
 5. Deploy and confirm the worker is online and registered with LiveKit.
 
 The agent is a persistent worker, not a web server. It does not need a public HTTP port or Railway domain for interview media; LiveKit provides the room connection.
 
-### Neon, LiveKit, and Sarvam
+### Service configuration
 
-- **Neon:** Create the Postgres database and Auth project. Configure the web app's `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, and Neon Auth values. Keep storage credentials only if resume uploads use object storage.
-- **LiveKit:** Create a project and use the same `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` on Vercel and Railway.
-- **Sarvam:** Set `SARVAM_API_KEY` on Vercel and Railway. The API uses it for report generation and document processing; the worker uses it for the live voice pipeline.
+- **Neon:** Create the Postgres database and Auth project. Configure `DATABASE_URL`, `DATABASE_URL_UNPOOLED`, and the Neon Auth values on Vercel. Add storage credentials only when resume uploads use object storage.
+- **LiveKit:** Use the same `LIVEKIT_URL`, `LIVEKIT_API_KEY`, and `LIVEKIT_API_SECRET` on Vercel and Railway.
+- **Sarvam:** Set `SARVAM_API_KEY` on Vercel and Railway. The web app uses it for report generation and document processing; the worker uses it for the live voice pipeline.
 
 ## Environment variables
 
-Use `.env.example` as the source template. Never commit real credentials or paste them into issues or screenshots.
+Use [`.env.example`](.env.example) as the source template. Never commit real credentials or paste them into issues or screenshots.
 
 | Variable | Vercel | Railway | Purpose |
 | --- | :---: | :---: | --- |
 | `DATABASE_URL` | Required | — | Pooled Neon PostgreSQL URL used by the web API |
 | `DATABASE_URL_UNPOOLED` | Required for migrations | — | Direct Neon PostgreSQL URL for Prisma migration operations |
 | `NEON_AUTH_BASE_URL` | Required | — | Neon Auth endpoint; supplied by Neon project linking/configuration |
-| `NEON_AUTH_JWKS_URL` | Neon-provided | — | Neon Auth signing-key endpoint; include if supplied by the Neon project integration |
+| `NEON_AUTH_JWKS_URL` | Neon-provided | — | Neon Auth signing-key endpoint, if supplied by the project integration |
 | `NEON_AUTH_COOKIE_SECRET` | Required | — | Random secret of at least 32 characters for auth cookies |
 | `INTERNAL_API_SECRET` | Required | Required (same value) | Authenticates worker callbacks to the web API |
 | `APP_URL` | — | Required | Public origin of the Vercel app, e.g. `https://ari-interview.vercel.app` |
@@ -162,24 +177,36 @@ Use `.env.example` as the source template. Never commit real credentials or past
 | `SARVAM_LANGUAGE_CODE` | — | Optional | Live interview language; defaults to `en-IN` |
 | `SARVAM_DOCUMENT_LANGUAGE` | Optional | — | Resume/document language; defaults to `en-IN` |
 | `AWS_ACCESS_KEY_ID` | Optional | — | Neon Object Storage access key, only when resume storage is configured |
-| `AWS_SECRET_ACCESS_KEY` | Optional | — | Neon Object Storage secret key |
+| `AWS_SECRET_ACCESS_KEY` | Optional | — | Object Storage secret key |
 | `AWS_ENDPOINT_URL_S3` | Optional | — | Object Storage S3 endpoint |
 | `AWS_REGION` | Optional | — | Object Storage region, if required by the bucket configuration |
 | `NEXT_PUBLIC_ARI_AVATAR_GLB` | Optional | — | Browser-visible avatar path; defaults to `/avatars/ari.glb` |
 
-`NEXT_PUBLIC_` values are included in browser code; never put secrets in variables with that prefix. Do not add `APP_URL` to Vercel just for this architecture—the worker needs it to call back to Vercel.
+`NEXT_PUBLIC_` values are included in browser code; never put secrets in variables with that prefix. Do not add `APP_URL` to Vercel for this architecture—the worker needs it to call back to Vercel.
 
-## Privacy and review
+## Repository layout
 
-- Raw interview audio is streamed for the live conversation and is not retained by Ari in this version; confirmed transcript turns are stored for interview and report workflows.
-- Camera participation is optional. Consent and transcript retention details are shown in the product before an interview starts.
+```text
+app/                 Next.js pages and API routes
+components/          Workspace, interview room, and avatar UI
+lib/                 Auth, database, LiveKit, storage, and AI helpers
+agent/               Python LiveKit agent worker
+prisma/              Database schema and versioned SQL migrations
+public/              Avatar and browser assets
+docs/images/         README logo and product screenshots
+```
+
+## Privacy and responsible review
+
+- Raw interview audio is streamed for the live conversation and is not retained by Ari in this version; confirmed transcript turns support interview and report workflows.
+- Camera use is optional. Consent and transcript retention details are shown before an interview starts.
 - Observable session events are kept separate from skill evaluation. Looking away or a camera interruption is not itself a skills judgment.
 - AI-generated findings support human review and do not make hiring decisions automatically.
 
 ## Assets and attribution
 
 - [TalkingHead](https://github.com/met4citizen/TalkingHead) and [HeadAudio](https://github.com/met4citizen/TalkingHead) are used under their respective licenses.
-- The bundled avatar attribution and licensing details are in [`public/avatars/ATTRIBUTION.md`](public/avatars/ATTRIBUTION.md).
+- Bundled avatar attribution and licensing details are in [`public/avatars/ATTRIBUTION.md`](public/avatars/ATTRIBUTION.md).
 
 ## License
 

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="104" viewBox="0 0 360 104" role="img" aria-labelledby="title">
+  <title id="title">Ari Interview Platform</title>
+  <rect width="360" height="104" fill="#ffffff"/>
+  <text x="8" y="59" fill="#17231e" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="700" letter-spacing="-5">Ari</text>
+  <path d="M8 68h76" stroke="#236b50" stroke-width="4" stroke-linecap="round"/>
+  <text x="9" y="96" fill="#84958b" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="2.2">INTERVIEW PLATFORM</text>
+</svg>
