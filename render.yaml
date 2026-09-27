@@ -1,0 +1,67 @@
+services:
+  # 1. Next.js Web Application
+  - type: web
+    name: ari-web
+    runtime: node
+    plan: starter
+    buildCommand: npm install && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: 22.12.0
+      - key: NEXT_PUBLIC_ARI_AVATAR_GLB
+        value: /avatars/ari-avatar.glb
+      - key: APP_URL
+        sync: false
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
+      - key: LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: INTERNAL_API_SECRET
+        sync: false
+      - key: NEON_AUTH_COOKIE_SECRET
+        sync: false
+      - key: AWS_ACCESS_KEY_ID
+        sync: false
+      - key: AWS_SECRET_ACCESS_KEY
+        sync: false
+      - key: AWS_ENDPOINT_URL_S3
+        sync: false
+      - key: AWS_REGION
+        sync: false
+
+  # 2. LiveKit Python Voice Agent Worker
+  - type: worker
+    name: ari-agent-worker
+    runtime: python
+    plan: starter
+    rootDir: agent
+    buildCommand: pip install -r requirements.txt
+    startCommand: python worker.py start
+    envVars:
+      - key: LIVEKIT_URL
+        sync: false
+      - key: LIVEKIT_API_KEY
+        sync: false
+      - key: LIVEKIT_API_SECRET
+        sync: false
+      - key: SARVAM_API_KEY
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: APP_URL
+        sync: false
+      - key: INTERNAL_API_SECRET
+        sync: false
+      - key: SARVAM_TTS_SPEAKER
+        value: priya
+      - key: SARVAM_LANGUAGE_CODE
+        value: en-IN

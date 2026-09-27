@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ari
+      POSTGRES_PASSWORD: ari
+      POSTGRES_DB: ari
+    ports:
+      - "5432:5432"
+    volumes:
+      - ari_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ari -d ari"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  ari_postgres:

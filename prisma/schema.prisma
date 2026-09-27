@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+enum InterviewStatus {
+  INVITED
+  READY
+  IN_PROGRESS
+  COMPLETED
+  INCOMPLETE
+}
+enum Speaker {
+  ARI
+  CANDIDATE
+}
+
+model Role {
+  id String @id @default(cuid())
+  title String
+  department String
+  level String
+  description String
+  requirements Json
+  rubric Json
+  blueprint Json
+  ownerId String?
+  createdAt DateTime @default(now())
+  interviews Interview[]
+  @@index([ownerId])
+}
+
+model Candidate {
+  id String @id @default(cuid())
+  name String
+  email String @unique
+  resumeText String?
+  resumeClaims Json?
+  resumeStorageKey String?
+  createdAt DateTime @default(now())
+  interviews Interview[]
+}
+
+model Interview {
+  id String @id @default(cuid())
+  roleId String
+  candidateId String
+  status InterviewStatus @default(INVITED)
+  stage String @default("opening")
+  coverage Json @default("[]")
+  blueprint Json?
+  consent Json?
+  integrityEvents Json @default("[]")
+  roomName String? @unique
+  isPractice Boolean @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  role Role @relation(fields: [roleId], references: [id])
+  candidate Candidate @relation(fields: [candidateId], references: [id])
+  turns Turn[]
+  report Report?
+  @@index([roleId, status])
+}
+
+model Turn {
+  id String @id @default(cuid())
+  interviewId String
+  speaker Speaker
+  text String
+  stage String
+  skillTags Json @default("[]")
+  startedAt DateTime @default(now())
+  endedAt DateTime?
+  final Boolean @default(true)
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  @@index([interviewId, startedAt])
+}
+
+model Report {
+  id String @id @default(cuid())
+  interviewId String @unique
+  findings Json
+  summary String
+  improvementPlan Json @default("[]")
+  reviewerOverrides Json @default("[]")
+  createdAt DateTime @default(now())
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+}
+
+model UserProfile {
+  userId String @id
+  targetRole String?
+  preferredResumeId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model UserResume {
+  id String @id @default(cuid())
+  userId String
+  fileName String
+  storageKey String @unique
+  text String
+  claims Json
+  createdAt DateTime @default(now())
+  @@index([userId, createdAt])
+}
