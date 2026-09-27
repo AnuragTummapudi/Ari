@@ -188,7 +188,6 @@ class SarvamRealtimeSTT(stt.STT):
             "endpointing":   self._endpointing,
             "encoding":      "linear16",
             "sample_rate":   self._sample_rate,
-            "api_subscription_key": self._api_key,
         }
         if self._endpointing == "vad":
             params["silence_duration_ms"]   = self._silence_duration_ms
@@ -261,7 +260,11 @@ class _RealtimeRecognizeStream(RecognizeStream):
 
         try:
             self._ws = await asyncio.wait_for(
-                self._http_session.ws_connect(ws_url, heartbeat=30),
+                self._http_session.ws_connect(
+                    ws_url,
+                    headers={"api-subscription-key": self._plugin._api_key},
+                    heartbeat=30,
+                ),
                 timeout=self._conn_options.timeout,
             )
         except Exception as exc:

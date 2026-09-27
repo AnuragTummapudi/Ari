@@ -53,6 +53,10 @@ export default function AriAvatar({
           avatarSpeakingEyeContact: 1,
           avatarIdleHeadMove: 0.025,
           avatarSpeakingHeadMove: 0.04,
+          // Live voice audio is lip-synced through HeadAudio below. TalkingHead's
+          // text lip-sync modules are unused here and their relative dynamic
+          // imports cannot be resolved reliably from a Next.js client bundle.
+          lipsyncModules: [],
           cameraRotateEnable: false,
           cameraPanEnable: false,
           cameraZoomEnable: false,
