@@ -1,7 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="360" height="104" viewBox="0 0 360 104" role="img" aria-labelledby="title">
+<svg xmlns="http://www.w3.org/2000/svg" width="360" height="112" viewBox="0 0 360 112" fill="none" role="img" aria-labelledby="title">
   <title id="title">Ari Interview Platform</title>
-  <rect width="360" height="104" fill="#ffffff"/>
-  <text x="8" y="59" fill="#17231e" font-family="Arial, Helvetica, sans-serif" font-size="58" font-weight="700" letter-spacing="-5">Ari</text>
-  <path d="M8 68h76" stroke="#236b50" stroke-width="4" stroke-linecap="round"/>
-  <text x="9" y="96" fill="#84958b" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="2.2">INTERVIEW PLATFORM</text>
+  <defs>
+    <linearGradient id="ari-ink" x1="12" y1="12" x2="145" y2="78" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#153D30"/>
+      <stop offset=".58" stop-color="#267854"/>
+      <stop offset="1" stop-color="#74A66C"/>
+    </linearGradient>
+  </defs>
+  <text x="8" y="72" fill="url(#ari-ink)" font-family="Georgia, 'Times New Roman', serif" font-size="72" font-style="italic" font-weight="700" letter-spacing="-7">Ari</text>
+  <path d="M15 82c29 3 57 1 87-7" stroke="url(#ari-ink)" stroke-linecap="round" stroke-width="4"/>
+  <text x="14" y="106" fill="#72887C" font-family="Arial, Helvetica, sans-serif" font-size="13" font-weight="700" letter-spacing="2.6">INTERVIEW PLATFORM</text>
 </svg>
