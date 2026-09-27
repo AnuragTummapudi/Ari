@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { nextStage, type InterviewStage } from "@/lib/interview";
+
+export const runtime = "nodejs";
 export async function POST(req: Request) {
   if (!process.env.INTERNAL_API_SECRET || req.headers.get("x-internal-secret") !== process.env.INTERNAL_API_SECRET) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   try {

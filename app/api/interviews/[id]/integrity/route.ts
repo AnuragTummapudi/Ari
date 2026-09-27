@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { verifyInterviewAccessToken } from "@/lib/interview-access";
+
+export const runtime = "nodejs";
 const allowed = ["tab_hidden", "camera_unavailable", "face_absent", "multiple_faces"];
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id }=await params;

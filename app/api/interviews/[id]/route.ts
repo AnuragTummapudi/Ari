@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getInterviewIdFromAccessToken } from "@/lib/interview-access";
 import { getAriUser } from "@/lib/auth";
 
+export const runtime = "nodejs";
+
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id: token } = await params;
   try {

@@ -204,7 +204,12 @@ export default function AriVoiceRouter({ onChatSender }: { onChatSender: (sender
           onInterrupt();
         }
         else if (data.type === "user_transcription" && data.transcript) {
-          window.dispatchEvent(new CustomEvent("ari:user-speech", { detail: data }));
+          // Only surface candidate transcripts when Ari is not speaking.
+          // With endpointing=manual in the backend STT, partials shouldn't arrive
+          // while Ari speaks — this is defence-in-depth against any latency slip.
+          if (!speaking.ari) {
+            window.dispatchEvent(new CustomEvent("ari:user-speech", { detail: data }));
+          }
         }
       } catch {}
     };

@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { fallbackFollowUp, nextStage, questionForStage, type InterviewStage } from "@/lib/interview";
 import { verifyInterviewAccessToken } from "@/lib/interview-access";
+
+export const runtime = "nodejs";
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   try {

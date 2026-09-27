@@ -76,14 +76,22 @@ async def entrypoint(ctx: JobContext) -> None:
         except Exception as error:
             print(json.dumps({"event": "interview_context_unavailable", "error": str(error)}))
 
+    # Use the new Sarvam Realtime STT plugin that targets /speech-to-text-realtime/ws
+    # with endpointing=manual so we can gate transcription precisely while Ari speaks.
+    from sarvam_realtime_stt import SarvamRealtimeSTT  # local plugin
+    realtime_stt = SarvamRealtimeSTT(
+        api_key=api_key,
+        language_code=language,
+        model="saaras:v4",
+        stream_type="fast",
+        # endpointing=manual means we send speech_start/speech_end ourselves
+        # so Ari speaking never triggers a transcription event.
+        endpointing="manual",
+        sample_rate=16000,
+    )
+
     session = AgentSession(
-        stt=sarvam.STT(
-            language=language,
-            model="saaras:v4",
-            mode="transcribe",
-            sample_rate=16000,
-            high_vad_sensitivity=True,
-        ),
+        stt=realtime_stt,
         llm=openai.LLM(
             model=os.getenv("SARVAM_INTERVIEW_MODEL", "sarvam-105b-conversations"),
             base_url=os.getenv("SARVAM_LLM_BASE_URL", "https://api.sarvam.ai/v1"),
@@ -100,6 +108,19 @@ async def entrypoint(ctx: JobContext) -> None:
             min_buffer_size=50,
             max_chunk_length=150,
         ),
+        # --- Speaker-lock: Ari finishes her thought before candidate can interrupt ---
+        allow_interruptions=False,
+        # Safety valve: if the agent gets stuck "speaking" too long, allow recovery.
+        # These are effectively disabled since allow_interruptions=False, but kept
+        # as documentation of intent.
+        min_interruption_duration=1.0,  # at least 1 s of speech before it counts
+        min_interruption_words=6,       # at least 6 words required
+        # Resume cleanly if a false-positive interruption slips through
+        resume_false_interruption=True,
+        agent_false_interruption_timeout=0.6,
+        # Wider endpointing window so Ari doesn't cut the candidate off prematurely
+        min_endpointing_delay=0.4,
+        max_endpointing_delay=2.0,
     )
 
     async def persist_item(event):
@@ -177,8 +198,13 @@ async def entrypoint(ctx: JobContext) -> None:
         new_state = str(getattr(event, "new_state", "")).lower()
         mapping = {"speaking": "speaking", "listening": "listening", "thinking": "thinking"}
         state = mapping.get(new_state, "listening")
-        import asyncio
         asyncio.create_task(broadcast_agent_state(state))
+        # While Ari is speaking, pause the realtime STT so no transcriptions leak
+        # through. Resume as soon as Ari finishes (thinking or listening state).
+        if new_state == "speaking":
+            asyncio.create_task(realtime_stt.pause_transcription())
+        else:
+            asyncio.create_task(realtime_stt.resume_transcription())
 
     def log_metrics(event):
         metrics = getattr(event, "metrics", event)

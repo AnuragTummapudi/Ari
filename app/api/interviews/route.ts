@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getAriUser } from "@/lib/auth";
 import { createInterviewAccessToken } from "@/lib/interview-access";
+
+export const runtime = "nodejs";
 export async function GET() {
   const user = await getAriUser();
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
