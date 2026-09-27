@@ -1,5 +1,8 @@
 <p align="center">
-  <img src="docs/images/ari-logo.svg" alt="Ari Interview Platform" width="300" />
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/images/ari-logo.svg" />
+    <img src="docs/images/ari-logo-light.svg" alt="Ari" width="240" />
+  </picture>
 </p>
 
 <h3 align="center">Structured interviews. Human decisions.</h3>

@@ -5,7 +5,7 @@
       <feGaussianBlur stdDeviation="7"/>
     </filter>
   </defs>
-  <text x="18" y="76" fill="#FFFFFF" font-family="'Avenir Next', 'Trebuchet MS', Arial, sans-serif" font-size="72" font-weight="700" letter-spacing="-6">Ari</text>
-  <circle cx="204" cy="49" r="15" fill="#41B883" opacity=".34" filter="url(#soft-glow)"/>
-  <circle cx="204" cy="49" r="7" fill="#54D69A"/>
+  <text x="18" y="76" fill="#183B2E" font-family="'Avenir Next', 'Trebuchet MS', Arial, sans-serif" font-size="72" font-weight="700" letter-spacing="-6">Ari</text>
+  <circle cx="204" cy="49" r="15" fill="#41B883" opacity=".3" filter="url(#soft-glow)"/>
+  <circle cx="204" cy="49" r="7" fill="#27875B"/>
 </svg>
