@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { PDFParse } from "pdf-parse";
 import mammoth from "mammoth";
 import { deleteResumeObject, storeResume } from "@/lib/resume-storage";
@@ -7,6 +8,8 @@ import { prisma } from "@/lib/prisma";
 export const runtime = "nodejs";
 export const maxDuration = 60;
 export async function POST(req: Request) {
+  const limited = await rateLimit(req, "resume-parse", 10, 600);
+  if (limited) return limited;
   try {
     const form = await req.formData();
     const file = form.get("file");

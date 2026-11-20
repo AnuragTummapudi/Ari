@@ -31,7 +31,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     });
     if (!interview) return NextResponse.json({ error: "Invitation not found" }, { status: 404 });
     const STAGES = ["opening", "product", "technical", "ownership", "candidate_questions", "complete"];
-    const stageIndex = Math.min(Math.max(STAGES.indexOf((interview.stage || "opening") as any), 0), 4);
+    const stageIndex = Math.min(Math.max(STAGES.indexOf((interview.stage || "opening") as any), 0), 5);
     return NextResponse.json({
       id: interview.id,
       room: interview.roomName,
@@ -39,6 +39,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       candidateName: interview.candidate.name,
       status: interview.status,
       practice: interview.isPractice,
+      passcodeRequired: Boolean(interview.passcodeHash),
       stage: interview.stage || "opening",
       stageIndex,
       turns: interview.turns.map((t: { id: string; speaker: string; text: string; stage: string; startedAt: Date; skillTags: unknown }) => ({

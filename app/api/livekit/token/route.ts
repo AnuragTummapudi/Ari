@@ -1,20 +1,27 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { AccessToken } from "livekit-server-sdk";
 import { prisma } from "@/lib/prisma";
 import { verifyInterviewAccessToken } from "@/lib/interview-access";
+import { verifyPasscode } from "@/lib/passcode";
 
 export const runtime = "nodejs";
 
 export async function POST(req: Request) {
-  let body: { interviewId?: string; accessToken?: string };
+  const limited = await rateLimit(req, "livekit-token", 10, 600);
+  if (limited) return limited;
+  let body: { interviewId?: string; accessToken?: string; passcode?: string };
   try { body = await req.json(); } catch { return NextResponse.json({ error: "A valid interview invitation is required" }, { status: 400 }); }
   if (!body.interviewId || typeof body.interviewId !== "string") return NextResponse.json({ error: "A valid interview invitation is required" }, { status: 400 });
   let interview;
-  try { interview = await prisma.interview.findUnique({ where: { id: body.interviewId }, select: { id: true, roomName: true, status: true, candidateId: true } }); }
+  try { interview = await prisma.interview.findUnique({ where: { id: body.interviewId }, select: { id: true, roomName: true, status: true, candidateId: true, passcodeHash: true } }); }
   catch { return NextResponse.json({ error: "Interview service is unavailable" }, { status: 503 }); }
   if (!interview || !interview.roomName) return NextResponse.json({ error: "Interview invitation or room not found" }, { status: 404 });
   if (!verifyInterviewAccessToken(body.accessToken, body.interviewId)) return NextResponse.json({ error: "Interview access expired" }, { status: 401 });
   if (interview.status === "COMPLETED") return NextResponse.json({ error: "This interview is already complete" }, { status: 410 });
+  if (interview.passcodeHash && !(await verifyPasscode(body.passcode, interview.passcodeHash))) {
+    return NextResponse.json({ error: body.passcode ? "That passcode is incorrect." : "Enter the passcode from your invitation.", passcodeRequired: true }, { status: 401 });
+  }
   const { LIVEKIT_API_KEY: apiKey, LIVEKIT_API_SECRET: apiSecret, LIVEKIT_URL: url } = process.env;
   if (!apiKey || !apiSecret || !url) return NextResponse.json({ error: "Live interview service is not configured" }, { status: 503 });
   const at = new AccessToken(apiKey, apiSecret, { identity: `candidate-${interview.candidateId}`, ttl: "1h" });
