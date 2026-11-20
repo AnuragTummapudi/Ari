@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { validateCitations } from "@/lib/interview";
 import { getAriUser } from "@/lib/auth";
@@ -11,7 +12,46 @@ type Finding = { skill: string; rating: number | null; supportingTurnIds: string
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  try { const interview=await prisma.interview.findUnique({where:{id},include:{candidate:true,role:true,report:true,turns:{where:{final:true},orderBy:{startedAt:"asc"}}}});if(!interview)return NextResponse.json({error:"Interview not found"},{status:404});if(interview.isPractice){if(!verifyInterviewAccessToken(_req.headers.get("x-interview-access"),id))return NextResponse.json({error:"Interview access expired"},{status:401});}else{const user=await getAriUser();if(!user)return NextResponse.json({error:"Sign in required"},{status:401});if(interview.role.ownerId!==user.id)return NextResponse.json({error:"Interview not found"},{status:404});}return NextResponse.json({id:interview.report?.id||null,interviewId:id,candidate:interview.candidate.name,role:interview.role.title,summary:interview.report?.summary||null,findings:interview.report?.findings||[],improvementPlan:interview.report?.improvementPlan||[],turns:interview.turns.map((t:any)=>({id:t.id,speaker:t.speaker,text:t.text,stage:t.stage,skillTags:t.skillTags,startedAt:t.startedAt})),integrityEvents:interview.integrityEvents,reviewerOverrides:interview.report?.reviewerOverrides||[]});}catch{return NextResponse.json({error:"Database unavailable"},{status:503});}
+  try {
+    const interview = await prisma.interview.findUnique({
+      where: { id },
+      include: {
+        candidate: true,
+        role: true,
+        report: true,
+        turns: { where: { final: true }, orderBy: { startedAt: "asc" } },
+      },
+    });
+    if (!interview) return NextResponse.json({ error: "Interview not found" }, { status: 404 });
+    const accessToken = _req.headers.get("x-interview-access");
+    const hasValidToken = verifyInterviewAccessToken(accessToken, id);
+    if (!hasValidToken) {
+      const user = await getAriUser();
+      if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
+      if (interview.role.ownerId !== user.id) return NextResponse.json({ error: "Interview not found" }, { status: 404 });
+    }
+    return NextResponse.json({
+      id: interview.report?.id || null,
+      interviewId: id,
+      candidate: interview.candidate.name,
+      role: interview.role.title,
+      summary: interview.report?.summary || null,
+      findings: interview.report?.findings || [],
+      improvementPlan: interview.report?.improvementPlan || [],
+      turns: interview.turns.map((t: any) => ({
+        id: t.id,
+        speaker: t.speaker,
+        text: t.text,
+        stage: t.stage,
+        skillTags: t.skillTags,
+        startedAt: t.startedAt,
+      })),
+      integrityEvents: interview.integrityEvents,
+      reviewerOverrides: interview.report?.reviewerOverrides || [],
+    });
+  } catch {
+    return NextResponse.json({ error: "Database unavailable" }, { status: 503 });
+  }
 }
 export async function PATCH(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id }=await params;
@@ -19,12 +59,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   try { const body=await req.json();if(!Array.isArray(body.reviewerOverrides))return NextResponse.json({error:"reviewerOverrides must be a list"},{status:400});const interview=await prisma.interview.findUnique({where:{id},include:{role:true,report:true}});if(!interview?.report||interview.role.ownerId!==user.id)return NextResponse.json({error:"Generate a report before reviewing it"},{status:404});const cleaned=body.reviewerOverrides.slice(-50).map((entry:unknown)=>{const item=entry as Record<string,unknown>;const rating=item.rating===null?null:Number(item.rating);return {note:typeof item.note==="string"?item.note.slice(0,2000):undefined,status:item.status==="reviewed"?"reviewed":undefined,skill:typeof item.skill==="string"?item.skill.slice(0,100):undefined,rating:Number.isInteger(rating)&&rating!>=1&&rating!<=5?rating:item.rating===null?null:undefined,rationale:typeof item.rationale==="string"?item.rationale.slice(0,1000):undefined,at:new Date().toISOString()}});const report=await prisma.report.update({where:{interviewId:id},data:{reviewerOverrides:cleaned}});return NextResponse.json({reviewerOverrides:report.reviewerOverrides});}catch{return NextResponse.json({error:"Could not save recruiter review"},{status:503});}
 }
 export async function POST(_req: Request, { params }: { params: Promise<{ id: string }> }) {
+  const limited = await rateLimit(_req, "report", 6, 600);
+  if (limited) return limited;
   const { id } = await params;
   try {
     const interview = await prisma.interview.findUnique({ where: { id }, include: { role: true, candidate: true, turns: { where: { final: true }, orderBy: { startedAt: "asc" } }, report: true } });
     if (!interview) return NextResponse.json({ error: "Interview not found" }, { status: 404 });
-    if (interview.isPractice && !verifyInterviewAccessToken(_req.headers.get("x-interview-access"), id)) return NextResponse.json({ error: "Interview access expired" }, { status: 401 });
-    if (!interview.isPractice) {
+    const accessToken = _req.headers.get("x-interview-access");
+    const hasValidToken = verifyInterviewAccessToken(accessToken, id);
+    if (!hasValidToken) {
       const user = await getAriUser();
       if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
       if (interview.role.ownerId !== user.id) return NextResponse.json({ error: "Interview not found" }, { status: 404 });

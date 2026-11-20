@@ -256,45 +256,63 @@ class _RealtimeRecognizeStream(RecognizeStream):
         """
         self._http_session = aiohttp.ClientSession()
         ws_url = self._plugin._build_ws_url(self._language)
-        logger.info("Sarvam Realtime STT connecting → %s", ws_url.split("?")[0])
+        max_retries = 3
 
         try:
-            self._ws = await asyncio.wait_for(
-                self._http_session.ws_connect(
-                    ws_url,
-                    headers={"api-subscription-key": self._plugin._api_key},
-                    heartbeat=30,
-                ),
-                timeout=self._conn_options.timeout,
-            )
-        except Exception as exc:
-            raise agents.APIConnectionError(
-                f"Sarvam Realtime STT: failed to connect — {exc}"
-            ) from exc
-
-        # Open the speech gate unless already paused (Ari may already be speaking)
-        if not self._plugin._transcription_paused:
-            await self._send_speech_start()
-
-        send_task = asyncio.create_task(self._send_audio_loop(), name="sarvam_stt_send")
-        recv_task = asyncio.create_task(self._recv_loop(),       name="sarvam_stt_recv")
-
-        try:
-            done, pending = await asyncio.wait(
-                [send_task, recv_task],
-                return_when=asyncio.FIRST_COMPLETED,
-            )
-            for t in pending:
-                t.cancel()
+            for attempt in range(max_retries):
+                logger.info("Sarvam Realtime STT connecting (attempt %d/%d) → %s", attempt + 1, max_retries, ws_url.split("?")[0])
                 try:
-                    await t
-                except (asyncio.CancelledError, Exception):
-                    pass
-            # Propagate first exception
-            for t in done:
-                exc = t.exception()
-                if exc:
-                    raise exc
+                    self._ws = await asyncio.wait_for(
+                        self._http_session.ws_connect(
+                            ws_url,
+                            headers={"api-subscription-key": self._plugin._api_key},
+                            heartbeat=30,
+                        ),
+                        timeout=self._conn_options.timeout,
+                    )
+                except Exception as exc:
+                    if attempt < max_retries - 1:
+                        logger.warning("Sarvam Realtime STT connect failed, retrying in 1s: %s", exc)
+                        await asyncio.sleep(1.0)
+                        continue
+                    raise agents.APIConnectionError(
+                        f"Sarvam Realtime STT: failed to connect — {exc}"
+                    ) from exc
+
+                try:
+                    # Open the speech gate unless already paused (Ari may already be speaking)
+                    if not self._plugin._transcription_paused:
+                        await self._send_speech_start()
+
+                    send_task = asyncio.create_task(self._send_audio_loop(), name="sarvam_stt_send")
+                    recv_task = asyncio.create_task(self._recv_loop(),       name="sarvam_stt_recv")
+                    done, pending = await asyncio.wait(
+                        [send_task, recv_task],
+                        return_when=asyncio.FIRST_COMPLETED,
+                    )
+                    for t in pending:
+                        t.cancel()
+                        try:
+                            await t
+                        except (asyncio.CancelledError, Exception):
+                            pass
+                    # Propagate first exception
+                    for t in done:
+                        exc = t.exception()
+                        if exc:
+                            raise exc
+                    break
+                except Exception as stream_exc:
+                    if attempt < max_retries - 1 and not isinstance(stream_exc, asyncio.CancelledError):
+                        logger.warning("Sarvam STT connection error, retrying: %s", stream_exc)
+                        if self._ws and not self._ws.closed:
+                            try:
+                                await self._ws.close()
+                            except Exception:
+                                pass
+                        await asyncio.sleep(1.0)
+                        continue
+                    raise stream_exc
         finally:
             self._plugin._remove_stream(self)
             # Graceful close

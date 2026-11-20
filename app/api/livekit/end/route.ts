@@ -19,7 +19,7 @@ export async function POST(req: Request) {
 
   const interview = await prisma.interview.findUnique({
     where: { id: body.interviewId },
-    select: { roomName: true },
+    select: { roomName: true, status: true },
   });
   if (!interview?.roomName) return NextResponse.json({ error: "Interview room not found" }, { status: 404 });
 
@@ -35,6 +35,12 @@ export async function POST(req: Request) {
     const dispatches = await dispatchClient.listDispatch(interview.roomName);
     await Promise.all(dispatches.map(dispatch => dispatchClient.deleteDispatch(dispatch.id, interview.roomName!)));
     await roomClient.deleteRoom(interview.roomName);
+    if (interview.status !== "COMPLETED") {
+      await prisma.interview.update({
+        where: { id: body.interviewId },
+        data: { status: "INCOMPLETE" },
+      });
+    }
     return NextResponse.json({ ended: true });
   } catch (error) {
     console.error("LiveKit room shutdown failed", error);

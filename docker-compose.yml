@@ -1,6 +1,7 @@
 services:
+  # ── Postgres (local dev only — use Neon in production) ─────────────────────
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16  # Postgres 16 with the pgvector extension (RAG)
     restart: unless-stopped
     environment:
       POSTGRES_USER: ari
@@ -15,6 +16,46 @@ services:
       interval: 5s
       timeout: 3s
       retries: 10
+
+  # ── Next.js web app ────────────────────────────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      # Override DATABASE_URL to point at the local postgres service
+      DATABASE_URL: postgresql://ari:ari@postgres:5432/ari
+      DATABASE_URL_UNPOOLED: postgresql://ari:ari@postgres:5432/ari
+      APP_URL: http://localhost:3000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:3000/api/health 2>/dev/null || exit 0"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  # ── Python LiveKit agent ───────────────────────────────────────────────────
+  agent:
+    build:
+      context: ./agent
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      # Agent calls the web app's internal API for interview context
+      APP_URL: http://web:3000
+    depends_on:
+      web:
+        condition: service_healthy
 
 volumes:
   ari_postgres:

@@ -59,13 +59,16 @@ model Interview {
   integrityEvents Json @default("[]")
   roomName String? @unique
   isPractice Boolean @default(false)
+  passcodeHash String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   role Role @relation(fields: [roleId], references: [id])
   candidate Candidate @relation(fields: [candidateId], references: [id])
   turns Turn[]
   report Report?
+  resumeChunks ResumeChunk[]
   @@index([roleId, status])
+  @@index([candidateId])
 }
 
 model Turn {
@@ -110,4 +113,24 @@ model UserResume {
   claims Json
   createdAt DateTime @default(now())
   @@index([userId, createdAt])
+}
+
+// RAG store: resume chunks embedded by the agent (all-MiniLM-L6-v2, 384 dims), searched by cosine distance.
+model ResumeChunk {
+  id String @id @default(cuid())
+  interviewId String
+  position Int
+  content String
+  embedding Unsupported("vector(384)")
+  interview Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  @@index([interviewId])
+  // HNSW index "ResumeChunk_embedding_idx" (vector_cosine_ops) lives in migration SQL; Prisma can't model it.
+  // If `prisma migrate dev` generates a DROP INDEX for it, delete that line from the new migration.
+}
+
+// Fixed-window request counters shared by every serverless instance.
+model RateLimit {
+  key String @id
+  count Int
+  resetAt DateTime
 }

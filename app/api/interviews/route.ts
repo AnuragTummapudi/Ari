@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
+import { rateLimit } from "@/lib/rate-limit";
 import { prisma } from "@/lib/prisma";
 import { getAriUser } from "@/lib/auth";
 import { createInterviewAccessToken } from "@/lib/interview-access";
+import { hashPasscode, isValidPasscode } from "@/lib/passcode";
 
 export const runtime = "nodejs";
 export async function GET() {
@@ -11,6 +13,8 @@ export async function GET() {
   catch { return NextResponse.json({ candidates: [], unavailable: true }); }
 }
 export async function POST(req: Request) {
+  const limited = await rateLimit(req, "interview-create", 20, 3600);
+  if (limited) return limited;
   try {
     const body = await req.json();
     const isPractice = body.practice === true;
@@ -21,7 +25,9 @@ export async function POST(req: Request) {
     // when the candidate chooses not to provide one, so it cannot overwrite another candidate profile.
     const candidateEmail = body.email?.trim() || `practice-${crypto.randomUUID()}@users.ari.local`;
     if (!body.roleTitle?.trim()) return NextResponse.json({ error: "Target role is required" }, { status: 400 });
-    let role = await prisma.role.findFirst({ where: { title: body.roleTitle.trim(), ...(isPractice ? {} : { ownerId: user!.id }) } });
+    const wantsPasscode = !isPractice && typeof body.passcode === "string" && body.passcode.length > 0;
+    if (wantsPasscode && !isValidPasscode(body.passcode)) return NextResponse.json({ error: "Passcode must be 4 to 64 characters" }, { status: 400 });
+    let role = await prisma.role.findFirst({ where: { title: body.roleTitle.trim(), ownerId: isPractice ? null : user!.id } });
     if (!role && !isPractice) return NextResponse.json({ error: "Role not found in your workspace" }, { status: 404 });
     if (!role && isPractice) role = await prisma.role.create({ data: { title: body.roleTitle || "Interview practice", department: "Candidate practice", level: "Target role", description: "Role details supplied for a candidate practice interview.", requirements: ["Product thinking", "Technical execution", "Communication"], rubric: ["Product thinking", "Technical depth", "Ownership", "Communication"], blueprint: { coreQuestions: ["Tell me about a product decision you influenced with evidence."], timeBudgetMinutes: 30, followUpLimit: 2 } } });
     if (!role) return NextResponse.json({ error: "Target role could not be prepared" }, { status: 503 });
@@ -34,7 +40,7 @@ export async function POST(req: Request) {
     const claims = savedClaims || (resumeText ? { excerpt: resumeText.slice(0, 1600), extractedSkills: extractSkills(resumeText), projectClaims: resumeText.split(/(?<=[.!?])\s+/).filter((s: string) => /\d|led|built|owned|launched|reduced|increased|improved|designed/i.test(s)).slice(0, 12) } : undefined);
     const candidate = await prisma.candidate.upsert({ where: { email: candidateEmail }, update: { name: body.name || "Candidate", ...(resumeText ? { resumeText, resumeClaims: claims } : {}), ...(resumeStorageKey ? { resumeStorageKey } : {}) }, create: { name: body.name || "Candidate", email: candidateEmail, resumeText: resumeText || null, resumeClaims: claims, resumeStorageKey } });
     const blueprint = { ...(role.blueprint as object), resumeClaims: claims || candidate.resumeClaims, personalizedProjectProbes: claims?.projectClaims || [], requiredSkillCoverage: role.requirements, maxFollowUpsPerQuestion: 2, sourceExcerpt: claims?.excerpt || null };
-    const interview = await prisma.interview.create({ data: { roleId: role.id, candidateId: candidate.id, isPractice, roomName: `ari-${crypto.randomUUID()}`, status: "READY", consent: body.consent || undefined, blueprint } });
+    const interview = await prisma.interview.create({ data: { roleId: role.id, candidateId: candidate.id, isPractice, roomName: `ari-${crypto.randomUUID()}`, status: "READY", consent: body.consent || undefined, blueprint, passcodeHash: wantsPasscode ? await hashPasscode(body.passcode) : null } });
     return NextResponse.json({ id: interview.id, room: interview.roomName, status: interview.status, accessToken: createInterviewAccessToken(interview.id) }, { status: 201 });
   } catch { return NextResponse.json({ error: "Database unavailable. Set DATABASE_URL and run the migrations." }, { status: 503 }); }
 }

@@ -3,8 +3,8 @@ import { createHmac, timingSafeEqual } from "node:crypto";
 const TOKEN_TTL_SECONDS = 60 * 60 * 24 * 14;
 
 function signingKey() {
-  const secret = process.env.INTERNAL_API_SECRET;
-  if (!secret || secret.length < 32) throw new Error("INTERNAL_API_SECRET must contain at least 32 characters.");
+  const secret = process.env.INTERVIEW_TOKEN_SECRET || process.env.INTERNAL_API_SECRET;
+  if (!secret || secret.length < 32) throw new Error("INTERVIEW_TOKEN_SECRET or INTERNAL_API_SECRET must contain at least 32 characters.");
   return secret;
 }
 

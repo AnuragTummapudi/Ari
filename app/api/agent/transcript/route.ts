@@ -14,11 +14,13 @@ export async function POST(req: Request) {
     const turnStage = current || "opening";
     const priorAnswers = interview.turns?.filter((t: { speaker: string; stage: string }) => t.speaker === "CANDIDATE" && t.stage === turnStage).length || 0;
     const next = speaker === "CANDIDATE" ? nextStage(turnStage, priorAnswers + 1) : turnStage;
-    const turn = await prisma.turn.create({ data: { interviewId: interview.id, speaker, text: text.trim(), stage: turnStage, skillTags: [], startedAt: startedAt ? new Date(startedAt) : new Date(), final: true } });
     const coverage = Array.isArray(interview.coverage) ? interview.coverage as string[] : [];
-    await prisma.interview.update({ where: { id: interview.id }, data: { status: "IN_PROGRESS", stage: next, ...(speaker === "CANDIDATE" ? { coverage: Array.from(new Set([...coverage, turnStage])) } : {}) } });
+    const [turn] = await prisma.$transaction([
+      prisma.turn.create({ data: { interviewId: interview.id, speaker, text: text.trim(), stage: turnStage, skillTags: [], startedAt: startedAt ? new Date(startedAt) : new Date(), final: true } }),
+      prisma.interview.update({ where: { id: interview.id }, data: { status: "IN_PROGRESS", stage: next, ...(speaker === "CANDIDATE" ? { coverage: Array.from(new Set([...coverage, turnStage])) } : {}) } }),
+    ]);
     const STAGES = ["opening", "product", "technical", "ownership", "candidate_questions", "complete"];
-    const stageIndex = Math.min(Math.max(STAGES.indexOf(next), 0), 4);
+    const stageIndex = Math.min(Math.max(STAGES.indexOf(next), 0), 5);
     return NextResponse.json({
       id: turn.id,
       speaker: turn.speaker,
