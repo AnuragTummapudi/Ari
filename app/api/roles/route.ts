@@ -6,7 +6,26 @@ export const runtime = "nodejs";
 export async function GET() {
   const user = await getAriUser();
   if (!user) return NextResponse.json({ error: "Sign in required" }, { status: 401 });
-  try { const roles=await prisma.role.findMany({where:{ownerId:user.id},orderBy:{createdAt:"desc"},include:{_count:{select:{interviews:true}}}}); return NextResponse.json(roles.map((r:any)=>({id:r.id,title:r.title,team:`${r.department} · ${r.level}`,n:r._count.interviews,complete:0,status:"Active"}))); }
+  try {
+    const roles = await prisma.role.findMany({
+      where: { ownerId: user.id },
+      orderBy: { createdAt: "desc" },
+      include: {
+        _count: { select: { interviews: true } },
+        interviews: { where: { status: "COMPLETED" }, select: { id: true } },
+      },
+    });
+    return NextResponse.json(
+      roles.map((r: any) => ({
+        id: r.id,
+        title: r.title,
+        team: `${r.department} · ${r.level}`,
+        n: r._count.interviews,
+        complete: r.interviews?.length || 0,
+        status: "Active",
+      }))
+    );
+  }
   catch { return NextResponse.json({ roles: [], unavailable: true }); }
 }
 export async function POST(req: Request) {

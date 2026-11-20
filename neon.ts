@@ -4,7 +4,7 @@ export default defineConfig({
   auth: true,
   preview: {
     buckets: {
-      resumes: { access: "public_read" },
+      resumes: { access: "private" },
       "candidate-resumes": { access: "private" },
     },
     functions: {
